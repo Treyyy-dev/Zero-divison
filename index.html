@@ -129,6 +129,14 @@ body.touch #feed{max-width:38vw}
 body.touch #feed div{font-size:9px}
 body.touch .sc{font-size:20px;min-width:36px}
 body.touch #prompt{display:none!important}
+#intro{position:fixed;inset:0;pointer-events:none;font-family:var(--mono)}
+#intro .count{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:.08em;text-shadow:0 2px 6px #000}
+#intro .mapname{position:absolute;left:max(18px,env(safe-area-inset-left,0px));right:max(18px,env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:4px;text-shadow:0 2px 8px #000}
+#intro .mapname span{font-size:11px;letter-spacing:.14em;color:var(--hot)}
+#intro .mapname b{font-family:var(--display);font-size:clamp(16px,3vw,30px);overflow-wrap:anywhere}
+#intro .tag{position:absolute;transform:translate(-50%,-100%);font-size:10px;padding:2px 6px;white-space:nowrap;background:rgba(10,14,20,.72);border-left:3px solid currentColor}
+#intro .tag.b{color:var(--bottom)}#intro .tag.t{color:var(--top)}
+#intro .tag em{font-style:normal;color:var(--text)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -158,18 +166,19 @@ body.touch #prompt{display:none!important}
   <button class="tb sm" id="tUse" type="button" hidden>DOOR</button>
   <button class="tb xs" id="tPause" type="button" aria-label="Pause">II</button>
 </div>
+<div id="intro" hidden><div class="count" id="icount">MATCH STARTS IN 5</div><div id="itags"></div><div class="mapname"><span>MAP</span><b>Meshy_AI_Make_a_map_for_my_gam_1022164321_texture.glb</b></div></div>
 <div id="rotate" hidden><b>Turn your phone sideways</b><span>The match plays in landscape</span></div>
 
 <div id="menu">
   <div class="wrapm">
-    <div class="brand"><h1>Zero <span>Division</span></h1><p>5v5 team deathmatch &middot; bottom floor vs top floor</p></div>
-    <div class="mapline">Map <b>Meshy_AI_Make_a_4_story_office_1022133150_texture.glb</b></div>
+    <div class="brand"><h1>Zero <span>Division</span></h1><p>5v5 team deathmatch &middot; front gardens vs rear wing</p></div>
+    <div class="mapline">Map <b>Meshy_AI_Make_a_map_for_my_gam_1022164321_texture.glb</b></div>
     <div id="load"><div>Loading models&hellip;</div><div id="loadbar"><i></i></div></div>
     <div class="sect"><h2>Character</h2><div class="grid" id="chars"></div></div>
     <div class="sect"><h2>Starting gun</h2><div class="grid" id="guns"></div></div>
     <div class="sect"><h2>Side</h2><div class="row">
-      <button class="team b sel" id="teamB" type="button"><strong>Bottom team</strong><span>Spawns on floor 1, fights upward</span></button>
-      <button class="team t" id="teamT" type="button"><strong>Top team</strong><span>Spawns on floor 4, fights downward</span></button>
+      <button class="team b sel" id="teamB" type="button"><strong>Front team</strong><span>Spawns in the front gardens</span></button>
+      <button class="team t" id="teamT" type="button"><strong>Back team</strong><span>Spawns in the rear wing</span></button>
     </div></div>
     <div class="keys" id="touchkeys" hidden><span><kbd>Left thumb</kbd>move (push far to sprint)</span><span><kbd>Right thumb</kbd>look</span><span><kbd>Red button</kbd>hold to shoot, drag to aim</span><span><kbd>AIM</kbd>aim down sights</span><span><kbd>GUN</kbd>switch gun</span><span><kbd>DOOR</kbd>open / close</span></div>
     <div class="keys" id="deskkeys"><span><kbd>WASD</kbd>move</span><span><kbd>Mouse</kbd>aim</span><span><kbd>Click</kbd>shoot</span><span><kbd>Right click</kbd>aim down sights</span><span><kbd>R</kbd>reload</span><span><kbd>E</kbd>open / close door</span><span><kbd>1-4</kbd>switch gun</span><span><kbd>Shift</kbd>sprint</span><span><kbd>Space</kbd>jump</span><span><kbd>Tab</kbd>scores</span><span><kbd>Esc</kbd>pause</span></div>
@@ -195,7 +204,7 @@ const UP = new V3(0,1,0);
 const rand=(a,b)=>a+Math.random()*(b-a);
 
 /* ------------------------------------------------------------------ assets */
-const MAP_FILE='Meshy_AI_Make_a_4_story_office_1022133150_texture.glb';
+const MAP_FILE='Meshy_AI_Make_a_map_for_my_gam_1022164321_texture.glb';
 const CHAR_FILES=[1,2,3,4,5,6,7].map(i=>`Meshy_AI_Character_output_${i}.glb`);
 // grip / fore / muzzle are in the gun model's own units (barrel points -x, model is ~1.9 long)
 const GUNS=[
@@ -224,7 +233,7 @@ scene.fog=new THREE.Fog(0xcfdbe4,70,260);
 const pmrem=new THREE.PMREMGenerator(renderer);
 const ENV=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
 scene.environment=ENV;
-const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.03,300);
+const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.03,600);
 camera.rotation.order='YXZ';
 scene.add(new THREE.HemisphereLight(0xf4f7ff,0x8a8378,0.7));
 const sun=new THREE.DirectionalLight(0xfff3e0,1.0);sun.position.set(12,22,8);scene.add(sun);
@@ -236,7 +245,7 @@ addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.a
 /* ------------------------------------------------------------------ loading */
 const loader=new GLTFLoader();
 // each .glb is shipped as base64 text parts next to the page
-const PARTS={"Meshy_AI_Make_a_4_story_office_1022133150_texture.glb": 2, "Meshy_AI_Make_a_futureristic_s_1022125526_texture.glb": 1, "Meshy_AI_Make_a_fictional_game_1022125614_texture.glb": 1, "Meshy_AI_Make_a_futureristic_A_1022125538_texture.glb": 1, "Meshy_AI_Make_style_futuristic_1022125554_texture.glb": 1, "Meshy_AI_Character_output_1.glb": 1, "Meshy_AI_Character_output_2.glb": 1, "Meshy_AI_Character_output_3.glb": 1, "Meshy_AI_Character_output_4.glb": 1, "Meshy_AI_Character_output_5.glb": 1, "Meshy_AI_Character_output_6.glb": 1, "Meshy_AI_Character_output_7.glb": 1};
+const PARTS={"Meshy_AI_Make_a_map_for_my_gam_1022164321_texture.glb": 2, "Meshy_AI_Make_a_futureristic_s_1022125526_texture.glb": 1, "Meshy_AI_Make_a_fictional_game_1022125614_texture.glb": 1, "Meshy_AI_Make_a_futureristic_A_1022125538_texture.glb": 1, "Meshy_AI_Make_style_futuristic_1022125554_texture.glb": 1, "Meshy_AI_Character_output_1.glb": 1, "Meshy_AI_Character_output_2.glb": 1, "Meshy_AI_Character_output_3.glb": 1, "Meshy_AI_Character_output_4.glb": 1, "Meshy_AI_Character_output_5.glb": 1, "Meshy_AI_Character_output_6.glb": 1, "Meshy_AI_Character_output_7.glb": 1};
 let loaded=0;const TOTAL=1+Object.values(PARTS).reduce((a,b)=>a+b,0);
 function tick(){loaded++;$('loadbar').firstElementChild.style.width=(100*loaded/TOTAL)+'%';}
 async function loadGLB(name){
@@ -256,13 +265,13 @@ const [LEVEL,mapGltf,charGltfs,gunGltfs]=await Promise.all([
 charGltfs.forEach(g=>tune(g.scene,0.15,0.7));gunGltfs.forEach(g=>tune(g.scene,1,1.1));tune(mapGltf.scene,0,0.55);
 
 /* -------------------------------------------------------------------- level */
-const K=7;                                   // model units -> metres
+const K=LEVEL.K||7;                          // model units -> metres
 const CELL=LEVEL.cell, GX0=LEVEL.x0, GZ0=LEVEL.z0, GW=LEVEL.W, GH=LEVEL.H;
 const CW=CELL*K;
 const Y=LEVEL.floors.map(f=>(f-LEVEL.floors[0])*K);  // floor heights in metres
 const NF=Y.length;
 const SLAB=0.45;
-const ceilH=k=>k<NF-1?Y[k+1]-Y[k]-SLAB:2.95;
+const ceilH=k=>k<NF-1?Y[k+1]-Y[k]-SLAB:(NF===1?60:2.95);
 const wx=c=>(GX0+c*CELL)*K, wz=c=>(GZ0+c*CELL)*K;
 const cx=x=>Math.floor((x/K-GX0)/CELL), cz=z=>Math.floor((z/K-GZ0)/CELL);
 mapGltf.scene.scale.setScalar(K);
@@ -275,8 +284,15 @@ const doorAt=Array.from({length:NF},()=>new Int16Array(GW*GH).fill(-1));
 const idx=(x,z)=>z*GW+x;
 for(let f=0;f<NF;f++){
   const g=grid[f];
-  for(let z=0;z<GH;z++)for(let x=0;x<GW;x++){ if(x<=2||x>=80||z<=1||z>=71) g[idx(x,z)]|=1; }
   for(const [x0,x1,z0,z1] of LEVEL.WALLS[f]) for(let z=z0;z<z1;z++)for(let x=x0;x<x1;x++) if(x>=0&&x<GW&&z>=0&&z<GH) g[idx(x,z)]|=1;
+}
+// ground height map (cm per cell), sampled bilinearly
+const HMAP=LEVEL.hmap?Int8Array.from(atob(LEVEL.hmap),c=>(c.charCodeAt(0)<<24)>>24):null;
+function groundH(x,z){
+  if(!HMAP) return 0;
+  const fx=(x/K-GX0)/CELL-.5, fz=(z/K-GZ0)/CELL-.5, ix=Math.floor(fx), iz=Math.floor(fz), tx=fx-ix, tz=fz-iz;
+  const h=(a,b)=>{a=Math.max(0,Math.min(GW-1,a));b=Math.max(0,Math.min(GH-1,b));return HMAP[b*GW+a]/100;};
+  return (h(ix,iz)*(1-tx)+h(ix+1,iz)*tx)*(1-tz)+(h(ix,iz+1)*(1-tx)+h(ix+1,iz+1)*tx)*tz;
 }
 // stairwells
 const STAIRS=LEVEL.STAIRS.map((s,i)=>{
@@ -294,7 +310,7 @@ const stairU=(s,z)=>(z-s.landEdge)*s.dir;
 function surfaces(x,z,out){
   out.length=0;
   const s=stairAt(x,z);
-  if(!s){ for(let k=0;k<NF;k++) out.push(Y[k]); return out; }
+  if(!s){ for(let k=0;k<NF;k++) out.push(Y[k]+(k===0?groundH(x,z):0)); return out; }
   const u=stairU(s,z), lane1 = x< s.div;
   if(u<0){ for(let k=0;k<NF;k++) out.push(Y[k]); return out; }
   for(let k=0;k<NF-1;k++){
@@ -437,124 +453,49 @@ function subtractRects(rects,h){
   }
   return out;
 }
-const IX0=wx(3),IX1=wx(80),IZ0=wz(2),IZ1=wz(71),TW=0.24;
-const holeRect=s=>[s.X0,s.X1,Math.min(s.landEdge,s.landing==='z1'?s.Z0:s.Z1),Math.max(s.landEdge,s.landing==='z1'?s.Z0:s.Z1)];
-const topOf=k=>k<NF-1?Y[k+1]:Y[k]+ceilH(k)+0.35;
-function aoTexture(f){
-  // soft darkening around furniture and walls, painted from the collision grid
-  const W2=77,H2=69,c=document.createElement('canvas');c.width=W2;c.height=H2;const g=c.getContext('2d');
-  g.fillStyle='#fff';g.fillRect(0,0,W2,H2);
-  for(let z=2;z<71;z++)for(let x=3;x<80;x++){const v=grid[f][idx(x,z)];if(v){g.fillStyle=v&1?'rgba(0,0,0,.55)':'rgba(0,0,0,.42)';g.fillRect(x-3,z-2,1,1);}}
-  for(let z=0;z<H2;z++){g.fillStyle='rgba(0,0,0,.35)';g.fillRect(0,z,1,1);g.fillRect(W2-1,z,1,1);}
-  for(let x=0;x<W2;x++){g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x,0,1,1);g.fillRect(x,H2-1,1,1);}
-  const out=document.createElement('canvas');out.width=out.height=256;const o=out.getContext('2d');
-  o.imageSmoothingEnabled=true;o.fillStyle='#fff';o.fillRect(0,0,256,256);
-  const small=document.createElement('canvas');small.width=26;small.height=23;const sg=small.getContext('2d');sg.imageSmoothingEnabled=true;sg.drawImage(c,0,0,26,23);
-  o.globalCompositeOperation='multiply';o.globalAlpha=.7;o.drawImage(c,0,0,256,256);o.globalAlpha=.8;o.drawImage(small,0,0,256,256);
-  const t=new THREE.CanvasTexture(out);t.flipY=false;return t;
-}
-function buildArchitecture(){
+const MCX=wx(GW/2), MCZ=wz(GH/2);          // map centre in metres
+function buildEstate(){
   doorMat.map=TEX.wood;doorMat.needsUpdate=true;
-  const fw=IX1-IX0, fd=IZ1-IZ0;
-  TEX.carpet.repeat.set(fw,fd);
-  const ceilT=TEX.ceiling.clone();ceilT.repeat.set(fw/1.2,fd/1.2);ceilT.needsUpdate=true;
-  const ceilMat=MAT.ceiling.clone();ceilMat.map=ceilT;
-  const nUV=(x,z)=>[(x-IX0)/fw,(z-IZ0)/fd];
-  const lights=[];
-  for(let k=0;k<NF;k++){
-    // floor surface with stair holes
-    let rects=[[IX0,IX1,IZ0,IZ1]];
-    if(k>0) for(const s of STAIRS) rects=subtractRects(rects,holeRect(s));
-    const fm=new THREE.MeshStandardMaterial({map:TEX.carpet,aoMap:aoTexture(k),aoMapIntensity:1,roughness:.96,envMapIntensity:.35});
-    const fl=new THREE.Mesh(mergeGeometries(rects.map(r=>quad(r[0],r[1],r[2],r[3],Y[k],true,nUV))),fm);scene.add(fl);
-    // ceiling (underside of the slab above), with holes where the next floor has them
-    let crects=[[IX0,IX1,IZ0,IZ1]];
-    if(k<NF-1) for(const s of STAIRS) crects=subtractRects(crects,holeRect(s));
-    const cy=Y[k]+ceilH(k);
-    scene.add(new THREE.Mesh(mergeGeometries(crects.map(r=>quad(r[0],r[1],r[2],r[3],cy,false,nUV))),ceilMat));
-    // slab edge at the landing side of each stair hole
-    if(k>0) for(const s of STAIRS) wbox(s.X0,s.X1,Y[k]-SLAB,Y[k]+0.01,s.landEdge-0.06,s.landEdge+0.06,'concrete');
-    // light panels on a 2.4 m grid, skipping walls and holes
-    for(let x=IX0+1.2;x<IX1-0.6;x+=2.4)for(let z=IZ0+1.2;z<IZ1-0.6;z+=2.4){
-      const gx=cx(x),gz=cz(z);let ok=true;
-      for(let dz=-3;dz<=3&&ok;dz++)for(let dx=-3;dx<=3;dx++){if(grid[k][idx(gx+dx,gz+dz)]&1){ok=false;break;}}
-      if(k<NF-1) for(const s of STAIRS){const h=holeRect(s);if(x>h[0]-.4&&x<h[1]+.4&&z>h[2]-.4&&z<h[3]+.4) ok=false;}
-      if(ok) lights.push([x,cy-0.012,z]);
-    }
-    // interior walls: greedy-merge the authored wall cells minus door openings and stairwells
-    const m=new Uint8Array(GW*GH);
-    for(const [a0,a1,b0,b1] of LEVEL.WALLS[k]) for(let z=Math.max(2,b0);z<Math.min(71,b1);z++)for(let x=Math.max(3,a0);x<Math.min(80,a1);x++) m[idx(x,z)]=1;
-    for(const d of doors){ if(d.f!==k) continue; const V=d.d.axis==='v';
-      for(let z=d.d.b0-(V?0:1);z<d.d.b1+(V?0:1);z++)for(let x=d.d.a0-(V?1:0);x<d.d.a1+(V?1:0);x++) m[idx(x,z)]=0;
-      // header above the door
-      const xa=wx(d.d.a0),xb=wx(d.d.a1),za=wz(d.d.b0),zb=wz(d.d.b1);
-      wbox(xa,xb,Y[k]+2.28,topOf(k),za,zb,'paint');
-    }
-    for(const s of STAIRS) for(let z=s.s.z0;z<s.s.z1;z++)for(let x=s.s.x0;x<s.s.x1;x++) m[idx(x,z)]=0;
-    for(let z=0;z<GH;z++)for(let x=0;x<GW;x++){
-      if(!m[idx(x,z)]) continue;
-      let w=1;while(x+w<GW&&m[idx(x+w,z)]) w++;
-      let h=1;outer:while(z+h<GH){for(let i=0;i<w;i++) if(!m[idx(x+i,z+h)]) break outer; h++;}
-      for(let j=0;j<h;j++)for(let i=0;i<w;i++) m[idx(x+i,z+j)]=0;
-      const x0=wx(x),x1=wx(x+w),z0=wz(z),z1=wz(z+h);
-      wbox(x0,x1,Y[k],topOf(k),z0,z1,'paint');
-      wbox(x0-.012,x1+.012,Y[k],Y[k]+.1,z0-.012,z1+.012,'skirting');
-    }
-    // exterior walls with window bands
-    const sides=[ // [axis, fixed coordinate (outer face), inner face, from, to]
-      ['z',IZ0-TW,IZ0,IX0-TW,IX1+TW],['z',IZ1,IZ1+TW,IX0-TW,IX1+TW],
-      ['x',IX0-TW,IX0,IZ0,IZ1],['x',IX1,IX1+TW,IZ0,IZ1]];
-    const y0=k===0?-0.4:Y[k], top=k<NF-1?Y[k+1]:Y[k]+ceilH(k)+1.2;
-    for(const [ax,c0,c1,a,b] of sides){
-      const store = k===0&&ax==='z'&&c0===IZ1;
-      const sill=store?0.12:0.9, head=store?2.75:2.5;
-      const B=(u0,u1,v0,v1,key)=> ax==='z'? wbox(u0,u1,v0,v1,c0,c1,key) : wbox(c0,c1,v0,v1,u0,u1,key);
-      B(a,b,y0,Y[k]+sill,'facade');B(a,b,Y[k]+head,top,'facade');
-      wbox(...(ax==='z'?[a,b,Y[k],Y[k]+.1,c0-.012,c1+.012]:[c0-.012,c1+.012,Y[k],Y[k]+.1,a,b]),'skirting');
-      // glass and mullions
-      const mid=(c0+c1)/2, n=Math.max(1,Math.round((b-a)/1.5)), step=(b-a)/n;
-      const gl= ax==='z'? new THREE.PlaneGeometry(b-a,head-sill) : new THREE.PlaneGeometry(b-a,head-sill).rotateY(Math.PI/2);
-      gl.translate(ax==='z'?(a+b)/2:mid, Y[k]+(sill+head)/2, ax==='z'?mid:(a+b)/2);
-      (buckets.glass||(buckets.glass=[])).push(gl);
-      for(let i=0;i<=n;i++){const u=a+i*step;B(u-.04,u+.04,Y[k]+sill,Y[k]+head,'frame');}
-      B(a,b,Y[k]+sill-.04,Y[k]+sill+.03,'frame');B(a,b,Y[k]+head-.03,Y[k]+head+.04,'frame');
-      ax==='z'? wbox(a,b,Y[k]+sill-.05,Y[k]+sill,c0-.03,c1+.06,'frame') : wbox(c0-.06,c1+.03,Y[k]+sill-.05,Y[k]+sill,a,b,'frame');
-    }
+  const T={
+    pave:makeTex(512,(g,sz)=>{g.fillStyle='#a39a8b';g.fillRect(0,0,sz,sz);
+      for(let y=0;y<8;y++)for(let x=0;x<8;x++){const o=(y%2)*32;const v=150+Math.random()*40|0;g.fillStyle=`rgb(${v},${v-8},${v-22})`;g.fillRect(x*64+o+3,y*64+3,58,58);}
+      speckle(g,sz,20000,['#8a8274','#b9b0a0','#7d7567'],1.5);}),
+    grass:makeTex(512,(g,sz)=>{g.fillStyle='#46592f';g.fillRect(0,0,sz,sz);speckle(g,sz,60000,['#3a4d27','#52683a','#5d7442','#41542c','#6b7a4a'],2);}),
+  };
+  const [c0,c1,r0,r1]=LEVEL.COURT, cw=wx(c1)-wx(c0), cd=wz(r1)-wz(r0);
+  T.pave.repeat.set(cw/4,cd/4);
+  const court=new THREE.Mesh(new THREE.PlaneGeometry(cw,cd).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({map:T.pave,roughness:.9,envMapIntensity:.3}));
+  court.position.set((wx(c0)+wx(c1))/2,0.005,(wz(r0)+wz(r1))/2);scene.add(court);
+  // stone planters in the courtyard: low cover
+  const pm=new THREE.MeshStandardMaterial({map:TEX.concrete,color:0xcabfae,roughness:.9});
+  const leaf=new THREE.MeshStandardMaterial({color:0x3f5f2c,roughness:.95});
+  const cxm=(c0+c1)/2, czm=(r0+r1)/2;
+  for(const [ox,oz,w,d] of [[-14,-12,5,10],[14,-12,5,10],[-14,12,5,10],[14,12,5,10],[0,0,10,5]]){
+    const x0=Math.round(cxm+ox-w/2),z0=Math.round(czm+oz-d/2);
+    for(let z=z0;z<z0+d;z++)for(let x=x0;x<x0+w;x++) grid[0][idx(x,z)]|=2;
+    const X0=wx(x0),X1=wx(x0+w),Z0=wz(z0),Z1=wz(z0+d);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(X1-X0,0.9,Z1-Z0),pm);b.position.set((X0+X1)/2,0.45,(Z0+Z1)/2);scene.add(b);
+    const h=new THREE.Mesh(new THREE.BoxGeometry(X1-X0-0.2,0.35,Z1-Z0-0.2),leaf);h.position.set((X0+X1)/2,1.05,(Z0+Z1)/2);scene.add(h);
   }
-  // roof and parapet
-  const rt=Y[NF-1]+ceilH(NF-1);
-  wbox(IX0-TW,IX1+TW,rt,rt+0.35,IZ0-TW,IZ1+TW,'concrete');
-  const lm=new THREE.InstancedMesh(new THREE.BoxGeometry(.6,.02,.6),MAT.light,lights.length);
-  lights.forEach((p,i)=>lm.setMatrixAt(i,new THREE.Matrix4().makeTranslation(p[0],p[1],p[2])));scene.add(lm);
-  for(const key in buckets){
-    const mat = key==='glass'?MAT.glass:MAT[key];
-    const mesh=new THREE.Mesh(mergeGeometries(buckets[key]),mat);
-    if(key==='glass') mesh.renderOrder=2;
-    scene.add(mesh);
-  }
-  // street, sidewalk and surrounding blocks
-  const asph=TEX.asphalt;asph.repeat.set(120,120);
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(480,480),new THREE.MeshStandardMaterial({map:asph,roughness:.95,envMapIntensity:.2}));
-  ground.rotation.x=-Math.PI/2;ground.position.y=-0.42;scene.add(ground);
-  const walk=new THREE.Mesh(new THREE.BoxGeometry(fw+12,.12,fd+12),new THREE.MeshStandardMaterial({color:0xa9a7a2,map:TEX.concrete,roughness:.9}));
-  walk.position.set((IX0+IX1)/2,-0.4,(IZ0+IZ1)/2);scene.add(walk);
-  const fac=TEX.facade;
-  for(let i=0;i<22;i++){
-    const a=i/22*Math.PI*2+rand(-.1,.1), d=rand(34,70), w=rand(10,22), dd=rand(10,22), h=rand(14,58);
-    const g=new THREE.BoxGeometry(w,h,dd);
-    const t=fac.clone();t.repeat.set(w/8,h/8);t.needsUpdate=true;
-    const b=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:t,color:new THREE.Color().setHSL(.58,.06,rand(.55,.8)),roughness:.7,envMapIntensity:.6}));
-    b.position.set(Math.cos(a)*d,h/2-0.42,Math.sin(a)*d);b.rotation.y=-a;scene.add(b);
-  }
-  // sky dome
-  const sky=new THREE.Mesh(new THREE.SphereGeometry(380,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
+  // lawn and countryside
+  T.grass.repeat.set(160,160);
+  const lawn=new THREE.Mesh(new THREE.PlaneGeometry(600,600).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({map:T.grass,roughness:1,envMapIntensity:.2}));
+  lawn.position.set(MCX,-0.82,MCZ);scene.add(lawn);
+  const trunkG=new THREE.CylinderGeometry(.18,.25,2.4,6), crownG=new THREE.ConeGeometry(2.2,6.5,8);
+  const trunkM=new THREE.MeshStandardMaterial({color:0x4a3828,roughness:1}), crownM=new THREE.MeshStandardMaterial({color:0x2f4a26,roughness:1});
+  const n=90, tr=new THREE.InstancedMesh(trunkG,trunkM,n), cr=new THREE.InstancedMesh(crownG,crownM,n), m4=new THREE.Matrix4();
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2+rand(-.03,.03), d=rand(48,95), x=MCX+Math.cos(a)*d, z=MCZ+Math.sin(a)*d, sc=rand(.8,1.5);
+    m4.compose(new V3(x,-0.82+1.2*sc,z),new Q(),new V3(sc,sc,sc));tr.setMatrixAt(i,m4);
+    m4.compose(new V3(x,-0.82+(2.4+3.1)*sc,z),new Q(),new V3(sc,sc,sc));cr.setMatrixAt(i,m4);}
+  scene.add(tr,cr);
+  const sky=new THREE.Mesh(new THREE.SphereGeometry(260,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
     uniforms:{top:{value:new THREE.Color(0x6d9bd1)},bot:{value:new THREE.Color(0xdde6ec)}},
     vertexShader:'varying vec3 v;void main(){v=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     fragmentShader:'uniform vec3 top,bot;varying vec3 v;void main(){gl_FragColor=vec4(mix(bot,top,pow(clamp(v.y,0.,1.),.6)),1.);}'}));
-  scene.add(sky);
+  sky.position.set(MCX,0,MCZ);scene.add(sky);
 }
 
-buildArchitecture();
+buildEstate();
 
 /* --------------------------------------------------------------- collision */
 const R=0.22, STEP=0.55, DROP=0.9;
@@ -601,7 +542,7 @@ function moveBody(b,dx,dz,dt){
 const _ts=[];
 function solidAt(x,y,z){
   let f=0;for(let k=0;k<NF;k++) if(Y[k]<=y) f=k;
-  if(y<Y[0]-0.05) return true;
+  if(y<Y[0]+groundH(x,z)-0.05) return true;
   const h=y-Y[f];
   const s=stairAt(x,z);
   if(h>ceilH(f)){ // inside the slab above floor f, or the roof
@@ -991,7 +932,7 @@ class Bot{
     const a=this.a;
     if(e.dead||e.protect>1.6) return false;
     const o=a.eye(), tgt=e.chest(), d=tgt.clone().sub(o), dist=d.length();
-    if(dist>45) return false;
+    if(dist>70) return false;
     d.normalize();
     const fwd=a.dir(); if(fwd.dot(d)<-0.1&&dist>5&&this.hurtBy!==e) return false;
     if(traceWorld(o,d,dist)<dist-0.2){ const h=e.headPos().sub(o),hl=h.length(); return traceWorld(o,h.normalize(),hl)>=hl-0.2; }
@@ -1082,16 +1023,17 @@ const angDiff=(a,b)=>{let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+
 const turn=(a,b,m)=>{const d=angDiff(a,b);return a+Math.max(-m,Math.min(m,d));};
 
 /* ------------------------------------------------------------------ spawns */
-// cells reachable from the main stairwell landing on each floor
+// cells reachable from the front spawn
+const SP=LEVEL.SPAWNS;
 reach=nav.map((w,f)=>{
-  const r=new Uint8Array(GW*GH), s=STAIRS[0], [sx,sz]=nearestNav(f,(s.X0+s.X1)/2,s.landZ), q=[idx(sx,sz)]; r[q[0]]=1;
+  const sp=SP[0], [sx,sz]=nearestNav(f,wx((sp[0]+sp[1])/2),wz((sp[2]+sp[3])/2)), r=new Uint8Array(GW*GH), q=[idx(sx,sz)]; r[q[0]]=1;
   while(q.length){const i=q.pop(),x=i%GW,z=(i/GW)|0;for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){const j=idx(x+dx,z+dz);if(w[j]&&!r[j]){r[j]=1;q.push(j);}}}
   return r;
 });
 const spawnCells=[[],[]];
-for(const [team,f] of [[0,0],[1,NF-1]]){
-  for(let z=44;z<70;z++)for(let x=4;x<79;x++){
-    if(x>=33&&x<=52) continue;
+for(const team of [0,1]){
+  const [x0,x1,z0,z1]=SP[team], f=team===0?0:NF-1;
+  for(let z=z0;z<z1;z++)for(let x=x0;x<x1;x++){
     let ok=true;for(let dz=-2;dz<=2&&ok;dz++)for(let dx=-2;dx<=2;dx++) if(!nav[f][idx(x+dx,z+dz)]){ok=false;break;}
     if(ok&&reach[f][idx(x,z)]) spawnCells[team].push([x,z,f]);
   }
@@ -1099,7 +1041,7 @@ for(const [team,f] of [[0,0],[1,NF-1]]){
 function pickSpawn(team){
   const cells=spawnCells[team];let best=null,bs=-1;
   for(let t=0;t<12;t++){
-    const c=cells[(Math.random()*cells.length)|0];const p=new V3(wx(c[0]+.5),Y[c[2]],wz(c[1]+.5));
+    const c=cells[(Math.random()*cells.length)|0];const p=new V3(wx(c[0]+.5),0,wz(c[1]+.5));p.y=Y[c[2]]+(c[2]===0?groundH(p.x,p.z):0);
     let near=1e9;for(const a of actors){ if(a.dead) continue; const d=a.pos.distanceTo(p); if(a.team!==team) near=Math.min(near,d*1); else near=Math.min(near,d*3+2); }
     if(near>bs){bs=near;best=p;}
   }
@@ -1163,7 +1105,7 @@ function updateHud(dt){
   $('hpbar').firstElementChild.style.width=Math.max(0,player.hp)+'%';
   $('hpbar').firstElementChild.style.background=player.hp<35?'var(--top)':'var(--text)';
   $('mag').textContent=player.reloading>0?'\u2026':`${player.mag[player.gun]} / ${player.G.mag}`;
-  $('floor').textContent=`FLOOR ${player.floor()+1} / ${NF}`;
+  $('floor').textContent=NF>1?`FLOOR ${player.floor()+1} / ${NF}`:'';
   if(hitT>0){hitT-=dt;if(hitT<=0)$('hitm').style.opacity=0;}
   hurtFlash=Math.max(0,hurtFlash-dt*2);$('vign').style.opacity=Math.max(hurtFlash*0.8,player.hp<35&&!player.dead?0.35:0);
   $('scope').style.display=(player.G.scope&&adsT>0.85&&!player.dead)?'block':'none';
@@ -1180,7 +1122,7 @@ function updateHud(dt){
     const port=innerHeight>innerWidth&&started&&!matchOver; $('rotate').hidden=!port; }
   if(nd) $('ptext').textContent=nd.target?'Close door':'Open door';
   if(boardOn){
-    const rows=[...actors].sort((a,b)=>a.team-b.team||b.kills-a.kills).map(a=>`<tr><td style="color:var(--${a.team?'top':'bottom'})">${a.team?'Top':'Bottom'}</td><td>${a.isPlayer?'<b>You</b> · ':''}${CHAR_FILES[a.char]}</td><td>${a.kills}</td><td>${a.deaths}</td></tr>`);
+    const rows=[...actors].sort((a,b)=>a.team-b.team||b.kills-a.kills).map(a=>`<tr><td style="color:var(--${a.team?'top':'bottom'})">${a.team?'Back':'Front'}</td><td>${a.isPlayer?'<b>You</b> · ':''}${CHAR_FILES[a.char]}</td><td>${a.kills}</td><td>${a.deaths}</td></tr>`);
     $('btab').innerHTML=rows.join('');
   }
 }
@@ -1195,7 +1137,7 @@ function nearDoor(){
 const keys={};let mouseDown=false,boardOn=false,paused=true,matchOver=false,matchTime=MATCH_TIME;
 addEventListener('keydown',e=>{
   if(e.code==='Tab'){e.preventDefault();boardOn=true;$('board').style.display='block';}
-  if(paused) return;
+  if(paused||introT>0) return;
   keys[e.code]=true;
   if(e.code==='KeyR') player.startReload();
   if(e.code==='KeyE'){const d=nearDoor();if(d) setDoor(d,!d.target,player.pos);}
@@ -1205,13 +1147,14 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Tab'){boardOn=false;$('board').style.display='none';}});
 renderer.domElement.addEventListener('mousedown',e=>{
   if(paused){ lock(); return; }
+  if(introT>0) return;
   if(e.button===0){mouseDown=true;if(!player.G.auto) player.fire();}
   if(e.button===2) aiming=true;
 });
 addEventListener('mouseup',e=>{if(e.button===0)mouseDown=false;if(e.button===2)aiming=false;});
 addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousemove',e=>{
-  if(paused||!player) return;
+  if(paused||!player||introT>0) return;
   const sens=0.0022*(aiming?camera.fov/75:1);
   player.yaw-=e.movementX*sens;player.pitch=Math.max(-1.45,Math.min(1.45,player.pitch-e.movementY*sens));
 });
@@ -1260,7 +1203,8 @@ function setupTouch(){
 }
 
 /* -------------------------------------------------------------------- menu */
-let selChar=0, selGun=2, selTeam=0, started=false;
+let selChar=0, selGun=2, selTeam=0, started=false, introT=0, introA=0;
+const INTRO=5;
 function thumbs(){
   const r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
   r.outputColorSpace=THREE.SRGBColorSpace;
@@ -1313,15 +1257,36 @@ function startMatch(){
   for(const a of actors) a.respawn();
   for(const a of actors) a.protect=0;
   setViewGun(selGun);
-  $('menu').hidden=true;$('hud').hidden=false;started=true;
-  $('goal').textContent=`FIRST TEAM TO ${SCORE_LIMIT} KILLS \u00b7 YOU ARE ${selTeam?'TOP':'BOTTOM'} TEAM`;
+  $('menu').hidden=true;started=true;
+  introT=(TEST&&!location.search.includes('intro'))?0:INTRO; introA=Math.random()*Math.PI*2;
+  if(introT>0){
+    $('hud').hidden=true;$('intro').hidden=false;$('touch').hidden=true;player.rig.holder.visible=true;
+    $('itags').innerHTML='';
+    for(const a of actors){const t=document.createElement('div');t.className='tag '+(a.team?'t':'b');t.innerHTML=a.isPlayer?'<em>You</em> &middot; <span></span>':'<span></span>';t.querySelector('span').textContent=CHAR_FILES[a.char];$('itags').append(t);a.tag=t;}
+  } else $('hud').hidden=false;
+  $('goal').textContent=`FIRST TEAM TO ${SCORE_LIMIT} KILLS \u00b7 YOU ARE ${selTeam?'BACK':'FRONT'} TEAM`;
   $('feed').innerHTML='';
+}
+function endIntro(){
+  introT=0;$('intro').hidden=true;$('hud').hidden=false;
+  if(player.fp) player.rig.holder.visible=false;
+  if(IS_TOUCH) $('touch').hidden=false;
+}
+function introCamera(){
+  const k=1-introT/INTRO, a=introA+k*1.9, r=40-k*8, e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+  camera.position.set(MCX+Math.cos(a)*r,20-e*6,MCZ+Math.sin(a)*r);camera.lookAt(MCX,1.2,MCZ);
+  if(camera.fov!==60){camera.fov=60;camera.updateProjectionMatrix();}
+  $('icount').textContent=`MATCH STARTS IN ${Math.max(1,Math.ceil(introT))}`;
+  const v=new V3();
+  for(const a of actors){ if(!a.tag) continue; v.set(a.pos.x,a.pos.y+2.15,a.pos.z).project(camera);
+    const vis=v.z<1&&Math.abs(v.x)<1.1&&Math.abs(v.y)<1.1; a.tag.style.display=vis?'block':'none';
+    if(vis){a.tag.style.left=((v.x+1)/2*innerWidth)+'px';a.tag.style.top=((1-v.y)/2*innerHeight)+'px';} }
 }
 function endMatch(){
   matchOver=true;paused=true;try{document.exitPointerLock();}catch(e){}
   const won=score[player.team]>score[1-player.team], tie=score[0]===score[1];
   const c=$('center');c.style.display='block';
-  c.innerHTML=`${tie?'Draw':won?'Victory':'Defeat'}<br><span style="font-size:15px;font-family:var(--mono);font-weight:400">Bottom ${score[0]} \u2013 ${score[1]} Top</span>`;
+  c.innerHTML=`${tie?'Draw':won?'Victory':'Defeat'}<br><span style="font-size:15px;font-family:var(--mono);font-weight:400">Front ${score[0]} \u2013 ${score[1]} Back</span>`;
   boardOn=true;$('board').style.display='block';updateHud(0);boardOn=false;
   $('touch').hidden=true;
   setTimeout(()=>{$('board').style.display='none';$('menu').hidden=false;$('hud').hidden=true;started=false;$('go').textContent='Play again';},5000);
@@ -1329,12 +1294,13 @@ function endMatch(){
 
 /* --------------------------------------------------------------- main loop */
 const clock=new THREE.Clock();
-camera.position.set(wx(41),Y[1]+12,wz(110));camera.lookAt(0,Y[1],0);
+camera.position.set(MCX+30,16,MCZ+30);camera.lookAt(MCX,2,MCZ);
 function frame(){
   requestAnimationFrame(frame);
   const dt=Math.min(clock.getDelta(),0.05);
   step(dt);
-  if(started&&player){
+  if(started&&player&&introT>0){ introCamera(); }
+  else if(started&&player){
     if(!TEST){
       const eyeY=player.dead?player.pos.y+0.4+Math.max(0,1-player.deathT*2)*1.1:player.pos.y+1.6;
       camera.position.set(player.pos.x,eyeY,player.pos.z);
@@ -1344,12 +1310,18 @@ function frame(){
     placeViewGun(dt);
     updateHud(dt);
   } else if(!started){
-    const t=performance.now()*0.00005;camera.position.set(Math.sin(t)*24,Y[2]+6,Math.cos(t)*24);camera.lookAt(0,Y[1]+2,0);
+    const t=performance.now()*0.00005;camera.position.set(MCX+Math.sin(t)*38,18,MCZ+Math.cos(t)*38);camera.lookAt(MCX,2,MCZ);
   }
   renderer.clear();renderer.render(scene,camera);
-  if(started&&player&&!player.dead&&!TEST){renderer.clearDepth();renderer.render(vmScene,vmCam);}
+  if(started&&player&&!player.dead&&!TEST&&introT<=0){renderer.clearDepth();renderer.render(vmScene,vmCam);}
 }
 function step(dt){
+  if(started&&!matchOver&&introT>0){
+    introT-=dt; for(const a of actors){a.speed=0;a.update(dt);}
+    player.rig.pose(dt,0,1,0,false);
+    if(introT<=0) endIntro();
+    updateDoors(dt);updateFx(dt);return;
+  }
   if(started&&!matchOver&&(!paused||TEST)){
     matchTime-=dt;
     if(score[0]>=SCORE_LIMIT||score[1]>=SCORE_LIMIT||matchTime<=0) endMatch();
@@ -1379,7 +1351,7 @@ function step(dt){
 }
 frame();
 
-if(TEST||location.search.includes('fp')){ window.__G={renderer,scene,step,actors,startMatch,setSel:(c,g,t)=>{selChar=c;selGun=g;selTeam=t;},camera,doors,setDoor,Y,STAIRS,planPath,score,wx,wz,canOccupy,groundAt,get player(){return player;},set paused(v){paused=v;},nav,THREE}; window.DONE=true; }
+if(TEST||location.search.includes('fp')){ window.__G={get introT(){return introT;},endIntro,renderer,scene,step,actors,startMatch,setSel:(c,g,t)=>{selChar=c;selGun=g;selTeam=t;},camera,doors,setDoor,Y,STAIRS,planPath,score,wx,wz,canOccupy,groundAt,get player(){return player;},set paused(v){paused=v;},nav,THREE}; window.DONE=true; }
 </script>
 
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
